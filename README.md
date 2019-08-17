@@ -38,12 +38,23 @@ On the other end is the station that sends just the string to the AP and receive
 
 Different WiFi modes explained.
 
-What is Soft-AP
+https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html
+
+#### What is Soft-AP
 
 Soft-AP means : it does NOT have access to Wired Network !
 
 ![image](https://user-images.githubusercontent.com/14288989/63208550-10072380-c0f3-11e9-9bc3-7b0fede23355.png)
 
-https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html
+
+#### What is AP
+
+Devices that connect to Wi-Fi networks are called stations (STA).
+
+#### What is Station + Soft Access Point Mode.
+
+AP is usually integrated with a router, to provide access from the WiFi network to the Internet. 
+
+![Screen Shot 2019-08-17 at 1 34 14 PM](https://user-images.githubusercontent.com/14288989/63208605-e69ac780-c0f3-11e9-8e95-a500c2c2cf29.png)
 
 
