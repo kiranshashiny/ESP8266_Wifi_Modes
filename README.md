@@ -36,4 +36,14 @@ On the other end is the station that sends just the string to the AP and receive
 
 
 
+Different WiFi modes explained.
+
+What is Soft-AP
+
+Soft-AP means : it does NOT have access to Wired Network !
+
+![image](https://user-images.githubusercontent.com/14288989/63208550-10072380-c0f3-11e9-9bc3-7b0fede23355.png)
+
+https://arduino-esp8266.readthedocs.io/en/latest/esp8266wifi/readme.html
+
 
