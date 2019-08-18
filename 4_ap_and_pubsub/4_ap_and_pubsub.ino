@@ -1,5 +1,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <string.h>
+#include <iostream>
 //*****************************************
 //// AP + STA MODE TOGETHER………
 
@@ -105,10 +107,24 @@ void loop() {
   if (now - lastMsg > 2000) {
     lastMsg = now;
     ++value;
-    snprintf (msg, 75, "%s", request.c_str());
-    Serial.print("Publish message: ");
-    Serial.println(msg);
-    pubsubclient.publish("washingmc", msg);
+    //snprintf (msg, 75, "%s", request.c_str());
+    
+    int firstComma = request.indexOf(',');
+    String topicStr = request.substring( 0, firstComma);
+    Serial.print("extracted topicStr: ");
+    Serial.println (topicStr);
+    
+    String valueStr = request.substring(firstComma +1 );
+    Serial.print("extracted valueStr: ");
+    Serial.println (valueStr);
+    
+    Serial.print("Publishing message: ");
+    
+    if ( topicStr.equals ( "washingmc")) {
+      pubsubclient.publish("washingmc", valueStr.c_str());
+    } else if ( topicStr.equals ("tempr")) {
+      pubsubclient.publish("tempr", valueStr.c_str());
+    }
+    
   }
-
 }
