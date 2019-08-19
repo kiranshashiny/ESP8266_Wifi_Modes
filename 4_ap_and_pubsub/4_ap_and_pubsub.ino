@@ -39,7 +39,7 @@ void reconnect() {
     if (pubsubclient.connect(clientId.c_str(), "oxefqvkn", "uTM7RdarxTPA")) {
       Serial.println("connected");
       // Once connected, publish an announcement...
-      pubsubclient.publish("outTopic", "hello world");
+      pubsubclient.publish("outTopic", "Creative Controllers");
       // ... and resubscribe
       pubsubclient.subscribe("inTopic");
     } else {
@@ -90,11 +90,11 @@ void loop() {
   WiFiClient client = server.available();
   if (!client) {return;}
   String request = client.readStringUntil('\r');
-  Serial.println("********************************");
-  Serial.println("From the station: " + request);
+  Serial.println("********** Got Something from Station **********************");
+  Serial.println("From the station: [" + request + "]" );
   client.flush();
-  Serial.print("Byte sent to the station: ");
-  Serial.println(client.println(request + "__recieved" + "\r"));
+  //Serial.print("Byte sent to the station: ");
+  //Serial.println(client.println(request + "__received" + "\r"));
 
   // Part 2 .  Remote Cloud Point //
 
@@ -107,24 +107,44 @@ void loop() {
   if (now - lastMsg > 2000) {
     lastMsg = now;
     ++value;
-    //snprintf (msg, 75, "%s", request.c_str());
     
     int firstComma = request.indexOf(',');
     String topicStr = request.substring( 0, firstComma);
-    Serial.print("extracted topicStr: ");
-    Serial.println (topicStr);
+    Serial.println("extracted topicStr: ["+ topicStr + "]");
     
     String valueStr = request.substring(firstComma +1 );
-    Serial.print("extracted valueStr: ");
-    Serial.println (valueStr);
+    Serial.println("extracted valueStr: [" + valueStr + "]");
     
-    Serial.print("Publishing message: ");
+    //Serial.print("Publishing message as valueStr = ");
     
     if ( topicStr.equals ( "washingmc")) {
+      Serial.println ("Trapping washingmc topic to send :" + valueStr);
       pubsubclient.publish("washingmc", valueStr.c_str());
+      
     } else if ( topicStr.equals ("tempr")) {
+      Serial.println ( "Trapping tempr topic to send :" + valueStr);
       pubsubclient.publish("tempr", valueStr.c_str());
-    }
+     
+    } else if ( topicStr.equals ("hmdty")) {
+      Serial.println ( "Trapping hmdty topic to send :" + valueStr);
+      pubsubclient.publish("hmdty", valueStr.c_str());
+      
+    } else if ( topicStr.equals ("airp")) {
+      Serial.println ( "Trapping airp topic to send :" + valueStr);
+      pubsubclient.publish("airp", valueStr.c_str());
     
+    } else if ( topicStr.equals ("masterbath")) {
+      Serial.println ( "Trapping masterbath topic to send :" + valueStr);
+      pubsubclient.publish("masterbath", valueStr.c_str());
+
+    } else if ( topicStr.equals ("guestbath")) {
+      Serial.println ( "Trapping guestbath topic to send :" + valueStr);
+      pubsubclient.publish("guestbath", valueStr.c_str());
+
+    } else {
+    
+      Serial.println ("!! Nobody is catching this topic argh ! [ " + topicStr + "]" );
+    }
   }
+  delay(1000);
 }
