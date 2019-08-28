@@ -1,6 +1,6 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <string.h>
+#include <string>
 #include <iostream>
 //*****************************************
 //// AP + STA MODE TOGETHER………
@@ -26,11 +26,14 @@ IPAddress subnet2(255,255,255,0);
 WiFiServer server(80);
 void callback(char* topic, byte* payload, unsigned int length) {
 }
+int pos =0;
 
 void reconnect() {
   //this only applies to the cloud connection.
   // Loop until we're reconnected
-  while (!pubsubclient.connected()) {
+  // 28 Aug, changed 'while() to if()' this way I am not blocked
+  
+  if (!pubsubclient.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Create a random client ID
     String clientId = "ESP8266Client-";
@@ -84,9 +87,22 @@ void setup()
     pubsubclient.setCallback(callback);
 }
 
+void publish_mqtt_cloud ( String pubstr ) {
+  
+      int firstComma = pubstr.indexOf(',');
+      String topicStr = pubstr.substring( 0, firstComma);
+      Serial.println(" .  extracted topicStr: ["+ topicStr + "]");
+      
+      String valueStr = pubstr.substring(firstComma +1 );
+      Serial.println(" .  extracted valueStr: [" + valueStr + "]");
+    
+      pubsubclient.publish ( topicStr.c_str() , valueStr.c_str() );
+    
+}
+ 
 void loop() {
 
-  // Part 1 // Local Access Point
+  // Part 1 // Local Access Point, Get data from Clients.
   WiFiClient client = server.available();
   if (!client) {return;}
   String request = client.readStringUntil('\r');
@@ -96,7 +112,8 @@ void loop() {
   //Serial.print("Byte sent to the station: ");
   //Serial.println(client.println(request + "__received" + "\r"));
 
-  // Part 2 .  Remote Cloud Point //
+
+  // Part 2 .  Forward it to Remote Cloud Point, Cloudmqtt.com//
 
   if (!pubsubclient.connected()) {
     reconnect();
@@ -108,43 +125,23 @@ void loop() {
     lastMsg = now;
     ++value;
     
-    int firstComma = request.indexOf(',');
-    String topicStr = request.substring( 0, firstComma);
-    Serial.println("extracted topicStr: ["+ topicStr + "]");
+    // Link to String functions in Arduino, 
+    // https://www.arduino.cc/reference/en/language/variables/data-types/string/functions/substring/
+    // returns a "-1" if not found.
     
-    String valueStr = request.substring(firstComma +1 );
-    Serial.println("extracted valueStr: [" + valueStr + "]");
+    // Get the ribbon of information Pipe Char separated from Clients, publish to the cloud.
     
-    //Serial.print("Publishing message as valueStr = ");
-    
-    if ( topicStr.equals ( "washingmc")) {
-      Serial.println ("Trapping washingmc topic to send :" + valueStr);
-      pubsubclient.publish("washingmc", valueStr.c_str());
-      
-    } else if ( topicStr.equals ("tempr")) {
-      Serial.println ( "Trapping tempr topic to send :" + valueStr);
-      pubsubclient.publish("tempr", valueStr.c_str());
-     
-    } else if ( topicStr.equals ("hmdty")) {
-      Serial.println ( "Trapping hmdty topic to send :" + valueStr);
-      pubsubclient.publish("hmdty", valueStr.c_str());
-      
-    } else if ( topicStr.equals ("airp")) {
-      Serial.println ( "Trapping airp topic to send :" + valueStr);
-      pubsubclient.publish("airp", valueStr.c_str());
-    
-    } else if ( topicStr.equals ("masterbath")) {
-      Serial.println ( "Trapping masterbath topic to send :" + valueStr);
-      pubsubclient.publish("masterbath", valueStr.c_str());
-
-    } else if ( topicStr.equals ("guestbath")) {
-      Serial.println ( "Trapping guestbath topic to send :" + valueStr);
-      pubsubclient.publish("guestbath", valueStr.c_str());
-
-    } else {
-    
-      Serial.println ("!! Nobody is catching this topic argh ! [ " + topicStr + "]" );
+    while (  (pos = request.indexOf( "|" ) ) != -1) {
+ 
+           // it is not string.substr(), instead string.substring()
+           String sub = request.substring( 0,pos );
+           Serial.println ("Extracted substr after removing first part =  "  + sub );
+           // it is not string.erase(), it is string.remove() instead.
+           request.remove ( 0, pos+1);
+           Serial.println ("request is now chopped to  " + request );
+           publish_mqtt_cloud(sub );
     }
+    // there will be the last string that will contain the topic after the while(), handle it.
+    publish_mqtt_cloud(request );
   }
-  delay(1000);
 }
