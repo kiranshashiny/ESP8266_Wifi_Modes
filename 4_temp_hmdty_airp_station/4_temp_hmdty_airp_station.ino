@@ -7,14 +7,18 @@
 #include<dht.h>
 #include <SFE_BMP180.h> //Including BMP180 library
 
-dht DHT;
 #define DHT11_PIN D7
 
+#define localTopic "/WhiteHouse/C1-702/"
+
+dht DHT;
 
 char ssid[] = "Wemos_AP";           // SSID of your AP
 char pass[] = "Wemos_comm";         // password of your AP
 char msg[50];
-char newmsg[50];
+String PublishStr;
+
+boolean debug= false;
 
 #define ALTITUDE 920.00 //Altitude where I live (change this to your altitude)
 
@@ -54,49 +58,30 @@ void loop() {
   char status;
   
   int chk = DHT.read11(DHT11_PIN); 
-
-  Serial.print("Temperature:");
-  Serial.print(DHT.temperature, 2);
-  Serial.print("    ");
-  Serial.print("Humidity:");
-  Serial.println(DHT.humidity, 2);
-  delay(500);
+  if ( debug ) {
+      Serial.print("Temperature:");
+      Serial.print(DHT.temperature, 2);
+      Serial.print("    ");
+      Serial.print("Humidity:");
+      Serial.println(DHT.humidity, 2);
+      delay(500);
+  }
   
-  client.connect(server, 80);
   Serial.println("********************************");
   
   // Temperature
   float t = DHT.temperature;
-  snprintf (msg, 75, "tempr, %0.2f C\r", t);
-  client.print(msg);
+  snprintf (msg, 75, "%stemperature, %0.2f C\r", localTopic, t);
   Serial.println(msg);
-  //client.flush();
+  PublishStr = String(msg);
+  delay(1000);
   
-  //String answer = client.readStringUntil('\r');
-  //Serial.println("From the AP: " + answer);
-  client.flush();
-  client.stop();
-  delay(2000);
-  
-  // To send the second sensor data....
-  // Strange !  I have to connect(server..) again to send data.
-  // or else it wont go.
-
   //Humidity  
-  client.connect(server, 80);  
   float h = DHT.humidity;
-  sprintf (newmsg, "hmdty, %0.2f \%%\r", h);
-  client.print(newmsg);
-  Serial.println (newmsg);
-  client.flush();
-  client.stop();
-  delay(3000);
-
-  
-  // Air Pressure
-  //Serial.print("You provided altitude: ");
-  //Serial.print(ALTITUDE, 0);
-  //Serial.println(" meters");
+  sprintf (msg, "%shumidity, %0.2f \%%\r", localTopic, h);
+  Serial.println (msg);
+  PublishStr = PublishStr + "|"+ String(msg);
+  delay(1000);
 
   status = pressure.startPressure(3);
 
@@ -105,23 +90,37 @@ void loop() {
 
       status = pressure.getPressure(P, T);
       if (status != 0) {
-          //Serial.print("Pressure measurement: ");
-          //Serial.print(P);
-          //Serial.println(" hPa (Pressure measured using temperature)");
-
+          if( debug ) {Serial.print("Pressure measurement: ");
+             Serial.print(P);
+             Serial.println(" hPa (Pressure measured using temperature)");
+          }
           p0 = pressure.sealevel(P, ALTITUDE);
           //Serial.print("Relative (sea-level) pressure: ");
           //Serial.print(p0);
           //Serial.println("hPa");
           
-          client.connect(server, 80);
           long ap = (long) p0;  
-          sprintf (newmsg, "airp, %ld hPa\r", ap);
-          client.print(newmsg);
-          Serial.println (newmsg);
-          client.flush();
-          client.stop();
-          delay(3000);
+          sprintf (msg, "%sairp, %ld hPa\r", localTopic, ap);
+          Serial.println (msg);
+          PublishStr = PublishStr + "|" + String(msg);
+
       }
+  
+  } else {
+    sprintf (msg, "%sair-pressure, BMP180 SENSOR FAILED ! \r", localTopic);
+    Serial.println (msg);
+    PublishStr = PublishStr +  "|" + String(msg);
   }
+  
+  // Finally. Dont check if connection() was successful, 
+  // if failure it will be picked up next connect and publish.
+  client.connect(server, 80);
+  client.print(PublishStr);
+
+  client.flush();
+  client.stop();
+
+  Serial.println ( PublishStr );
+
+  delay(3000);
 }
