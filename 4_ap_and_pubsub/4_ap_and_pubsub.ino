@@ -1,10 +1,11 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "ThingSpeak.h"
+
 #include <string>
 #include <iostream>
 //*****************************************
-//// AP + STA MODE TOGETHER………
-
+//// AP + STA MODE TOGETHER 
 
 // Local Access point Ip Address……
 IPAddress local_IP(192,168,4,15);
@@ -13,6 +14,12 @@ IPAddress subnet(255,255,255,0);
 // Cloud connection details
 WiFiClient espClient;
 PubSubClient pubsubclient(espClient);
+
+// ThingSpeak
+unsigned long myChannelNumber = 857056;
+const char * myWriteAPIKey = "YE2PLBZ3OHHMPVWM";
+
+
 long lastMsg = 0;
 char msg[50];
 int value = 0;
@@ -85,6 +92,10 @@ void setup()
     Serial.println(WiFi.localIP());
     pubsubclient.setServer(mqtt_server, 19757);
     pubsubclient.setCallback(callback);
+    
+    // Thingspeak Init()
+    ThingSpeak.begin(espClient);
+
 }
 
 void publish_mqtt_cloud ( String pubstr ) {
@@ -92,10 +103,23 @@ void publish_mqtt_cloud ( String pubstr ) {
       int firstComma = pubstr.indexOf(',');
       String topicStr = pubstr.substring( 0, firstComma);
       Serial.println(" .  extracted topicStr: ["+ topicStr + "]");
-      
       String valueStr = pubstr.substring(firstComma +1 );
       Serial.println(" .  extracted valueStr: [" + valueStr + "]");
-    
+
+      
+      // If washing machine then send to Thing speak as well.
+      // Noticed a small problem where when I sent to thingspeak the rest of publish 
+      // outside the loop does not execute so I included the publish in the if loop.
+      //
+      if ( topicStr.equals ("/WhiteHouse/C1-702/washingmc") ) {
+        pubsubclient.publish ( topicStr.c_str() , valueStr.c_str() );
+
+        valueStr.replace ( "L", "" );  
+        Serial.println(" .  Modified extracted valueStr: [" + valueStr + "], sending to TS");
+        ThingSpeak.writeField(myChannelNumber, 1, valueStr, myWriteAPIKey);
+        return;
+      }
+      //Serial.println ("Publshing rest");
       pubsubclient.publish ( topicStr.c_str() , valueStr.c_str() );
     
 }
@@ -121,7 +145,7 @@ void loop() {
   pubsubclient.loop();
 
   long now = millis();
-  if (now - lastMsg > 2000) {
+  if (now - lastMsg > 4000) {
     lastMsg = now;
     ++value;
     
@@ -129,16 +153,15 @@ void loop() {
     // https://www.arduino.cc/reference/en/language/variables/data-types/string/functions/substring/
     // returns a "-1" if not found.
     
-    // Get the ribbon of information Pipe Char separated from Clients, publish to the cloud.
-    
+    // Get the ribbon of information Pipe Char separated from Clients, publish to the cloud.    
     while (  (pos = request.indexOf( "|" ) ) != -1) {
  
            // it is not string.substr(), instead string.substring()
            String sub = request.substring( 0,pos );
-           Serial.println ("Extracted substr after removing first part =  "  + sub );
+           //Serial.println ("Extracted substr after removing first part =  "  + sub );
            // it is not string.erase(), it is string.remove() instead.
            request.remove ( 0, pos+1);
-           Serial.println ("request is now chopped to  " + request );
+           //Serial.println ("request is now chopped to  " + request );
            publish_mqtt_cloud(sub );
     }
     // there will be the last string that will contain the topic after the while(), handle it.
