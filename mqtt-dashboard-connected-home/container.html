@@ -106,6 +106,13 @@
 		$('#chartContainerWashingMc').dxCircularGauge('instance').value(res);
 		document.getElementById("WashingmcUTime").innerHTML = dateTime;
         }
+        if ( message.destinationName == "/WhiteHouse/C1-702/kitchen_tap") {
+		// The message.payloadString has a string "L" in it.
+		// Remove it and then set it to value, or else it wont work.
+		var res = message.payloadString.replace ("L", "" );
+		$('#chartContainerKitchenTap').dxCircularGauge('instance').value(res);
+		document.getElementById("KitchentapUTime").innerHTML = dateTime;
+        }
     }
 
     function onConnect() {
